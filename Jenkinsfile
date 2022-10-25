@@ -49,39 +49,21 @@ pipeline{
             }
            } 
         }
-        stage("Check if branch already exists ")
+        stage("Create a release branch ")
         {
            steps {
             script 
             {
-                checkIfTeamExists()
+                createReleaseBranch()
+                checkIfBranchExists()
                 
             }
            } 
         }
 
-        stage("Check if Team is added to repo if not add team to repo")
-        {
-           steps {
-            script 
-            {
-               
-                addTeamToRepo()
-                
-            }
-           } 
-        }
+        
 
-        stage("Adding user to team and assign user role")
-        {
-           steps {
-            script 
-            {
-                addUserToTeam()
-                
-            }
-           } 
-        }
+        
         
         
          
