@@ -84,6 +84,15 @@ def checkIfBranchExists()
 
     }
 }
+def hitGetApi(String urlasked)
+{
+      
+      def(String response , int code) = sh(script: "curl ${urlasked}  -H \"${accept}\" -H \"${auth}\" -o /dev/null -w \"%{http_code}\"", returnStdout: true).trim().tokenize("\n")
+      echo "HTTP response response : ${response}"
+      return response
+      
+
+}
 
 def isMaintiner()
 {
