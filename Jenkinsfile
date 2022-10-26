@@ -14,7 +14,7 @@ pipeline{
         string(description: 'Specify github username for who needs to create release branch', name: 'username', defaultValue: 'htiwari1987') 
         string(description: 'Specify name of organization in which repo recides', name: 'organization', defaultValue: 'salesforcedocs')
         string(description: 'Name of repo to create release branch ', name: 'REPO_NAME',defaultValue: 'sfdocs-training')
-        string(description: 'Specify the release branch name', name: 'release_name',defaultValue: 'rel/236')
+        string(description: 'Specify the release branch name', name: 'release_name',defaultValue: 'rel/230')
         booleanParam(description: 'Force create branch ', name: 'forcecreate', defaultValue: false)
     }
         
@@ -64,8 +64,8 @@ def createReleaseBranch()
 
 def cloneRepo()
 {
-    sh(script: """ git clone --single-branch https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git ${REPO_NAME}; cd ${REPO_NAME} ; git checkout -b ${release_name};echo \"Creating a new release ${release_name}\">> README.md ; git add .;git commit -m \"Creating a new release ${release_name}\"git push --set-upstream origin ${release_name}
-git commit -m "Creating a new release ${release_name}"
+    sh(script: """ rm -rf ${REPO_NAME};git clone --single-branch https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git ${REPO_NAME}; cd ${REPO_NAME} ; git checkout -b ${release_name};echo \"Creating a new release ${release_name}\">> README.md ; git add .;git commit -m \"Creating a new release ${release_name}\";git push --set-upstream origin ${release_name}
+
       """, returnStdout: true).trim()
 }
 
