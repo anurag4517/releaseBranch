@@ -7,8 +7,8 @@ pipeline{
     environment {
         
         GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')
-        // auth = credentials('githubaccesspat')
-        // auth = "Bearer " + credentials('GITHUB_API_TOKEN')
+        auth = credentials('githubaccesspat')
+        
     }
     parameters
     {
@@ -86,7 +86,7 @@ def checkIfBranchExists()
 }
 def hitGetApi(String urlasked)
 {
-      auth = "Bearer " + credentials('GITHUB_API_TOKEN')
+      
       def(String response , int code) = sh(script: "curl ${urlasked}  -H \"${accept}\" -H \"${auth}\" -o /dev/null -w \"%{http_code}\"", returnStdout: true).trim().tokenize("\n")
       echo "HTTP response response : ${response}"
       return response
@@ -136,7 +136,7 @@ def checkRoleOfUser(String team_slug)
 
 def returnRole(String urlasked)
 {
-    auth = "Bearer " + credentials('GITHUB_API_TOKEN')
+    
     check = hitGetApi(urlasked)
     if(check!="404"){
         echo 'Previous role is assigned returning role '
