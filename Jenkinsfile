@@ -97,10 +97,10 @@ def hitGetApi(String urlasked)
 def isMaintiner()
 {
     String team_slug= "ccx-" + params.REPO_NAME
-    flag=checkRoleOfUser(auth = credentials('githubaccesspat'))
+    flag=checkRoleOfUser(team_slug)
     if(flag ==0) 
     {
-        echo " User is not a maintainer of repo so cannot create a Branch . Kindly connect with #SFDocs and get added to ${team_slug} "
+        error( " User is not a maintainer of repo so cannot create a Branch . Kindly connect with #SFDocs and get added to ${team_slug} ")
     }
 }
 
