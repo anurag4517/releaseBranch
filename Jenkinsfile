@@ -64,14 +64,24 @@ def createReleaseBranch()
 
 def cloneRepo()
 {
+    boolean status=checkIfBranchExists() 
+    if(!status)
+    {
     sh(script: """ rm -rf ${REPO_NAME};git clone --single-branch https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git ${REPO_NAME}; cd ${REPO_NAME} ; git checkout -b ${release_name};echo \"Creating a new release ${release_name}\">> README.md ; git add .;git commit -m \"Creating a new release ${release_name}\";git push --set-upstream origin ${release_name}
 
       """, returnStdout: true).trim()
+    }else { echo 'Branch already exists '}
 }
 
 def checkIfBranchExists()
 {
+    try {
+    sh(script: """ rm -rf ${REPO_NAME};git clone https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git --branch ${release_name} ${REPO_NAME} ; """, returnStdout: true).trim()
+    return true;
+    }catch(Exception ex) {
+        return false
 
+    }
 }
 
 
