@@ -7,8 +7,8 @@ pipeline{
     environment {
         
         GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')
-        auth = credentials('githubaccesspat')
-        
+        // auth = credentials('githubaccesspat')
+        auth = "Bearer " + credentials('GITHUB_API_TOKEN')
     }
     parameters
     {
