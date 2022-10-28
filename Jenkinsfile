@@ -53,11 +53,28 @@ pipeline{
             }
            } 
         }
+        stage("Enable Branch Protections for release branch")
+        {
+           steps {
+            script 
+            {
+                enableBranchProtection()    
+            }
+           } 
+        }
 
 
          
         }   
 }
+def enableBranchProtection()
+{
+   String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}/branches/${params.release_name}/protection"
+    String payload = '{"required_status_checks": null,"enforce_admins": true,"required_pull_request_reviews": {"dismissal_restrictions": {},"dismiss_stale_reviews": false,"require_code_owner_reviews": false,"required_approving_review_count": 1,"require_last_push_approval": true,"bypass_pull_request_allowances": {}},"restrictions": {"users": [],"teams": [],"apps": []},"required_linear_history": false,"allow_force_pushes": false,"allow_deletions": false,"block_creations": true,"required_conversation_resolution": true,"lock_branch": false,"allow_fork_syncing": false}'
+    response = hitPutApi(url,payload)
+    validateStatusCode(response,'200','Branch Protection')
+}
+
 def enableSquashandMerge()
 {
    String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}"
@@ -111,6 +128,14 @@ def hitGetApi(String urlasked)
 def hitPatchApi(String url , String payload)
 {
     def(String response , int code) = sh(script: """ curl -X PATCH ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
+      echo "HTTP response response : ${response}"
+      return response
+
+}
+
+def hitPutApi(String url , String payload)
+{
+    def(String response , int code) = sh(script: """ curl -X PUT ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
       echo "HTTP response response : ${response}"
       return response
 
