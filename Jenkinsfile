@@ -31,12 +31,14 @@ pipeline{
             }                
         }
        
-        stage("Check if user is maintainer for repo")
+        
+        stage("Create release branch")
         {
            steps {
             script 
             {
-                isMaintiner()
+                createReleaseBranch()
+                checkIfBranchExists()
                 
             }
            } 
