@@ -41,13 +41,14 @@ pipeline{
             }
            } 
         }
-        stage("Create a release branch ")
+        
+        stage("Enable only Squash and merge in PR ")
         {
            steps {
             script 
             {
-                createReleaseBranch()
-                checkIfBranchExists()
+                enableSquashandMerge()
+                
                 
             }
            } 
@@ -57,6 +58,20 @@ pipeline{
          
         }   
 }
+def enableSquashandMerge()
+{
+   String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}"
+    String payload = '{"allow_squash_merge": true,"allow_merge_commit": false,"allow_rebase_merge": false}'
+    response = hitPatchApi(url,payload)
+    validateStatusCode(response,'200','Squash Merge')
+}
+
+def validateStatusCode(String response , String expectedResponse , String identity)
+{
+       if(response!=expectedResponse){
+                            error("!!! Unable to find with given parameters : ${identity}") 
+        }
+} 
 def createReleaseBranch()
 {
     cloneRepo()
@@ -93,6 +108,14 @@ def hitGetApi(String urlasked)
       
 
 }
+def hitPatchApi(String url , String payload)
+{
+    def(String response , int code) = sh(script: """ curl -X PATCH ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
+      echo "HTTP response response : ${response}"
+      return response
+
+}
+
 
 def isMaintiner()
 {
