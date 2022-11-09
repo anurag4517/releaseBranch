@@ -64,7 +64,8 @@ def updateAutodeployment()
 {
     appid = getAppID()
     echo "${appid}"
-    String updateUrl = "https://kolkrabbi.heroku.com/apps/${appid}/github"
+    id = appid[0]
+    String updateUrl = "https://kolkrabbi.heroku.com/apps/${id}/github"
     String rel ="${params.release_name}"
     echo "${rel}"
 
