@@ -96,8 +96,8 @@ def getAppID()
     // response=hitGetApi(url)
     //  validateStatusCode(response,'200','Heroku App')
     String my_auth = "Authorization: Bearer ".concat("${heroku_auth}")
-    // def(String response , int code) = sh(script: "curl ${url}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}\" -o /dev/null -w \"%{http_code}\"", returnStdout: true).trim().tokenize("\n")
-    //   echo "HTTP response response : ${response}"
+    def(String response , int code) = sh(script: "curl ${url}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}\" -o /dev/null -w \"%{http_code}\"", returnStdout: true).trim().tokenize("\n")
+      echo "HTTP response response : ${response}"
     def appid = sh(script: "curl ${url}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}\"| python -c \"import sys,json; print json.load(sys.stdin)['id']\" ", returnStdout: true).trim().tokenize("\n")
     return appid
 
