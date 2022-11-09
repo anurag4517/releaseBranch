@@ -82,7 +82,8 @@ def updateAutodeployment()
 {
     appid = getAppID()
     String updateUrl = "https://kolkrabbi.heroku.com/apps/${appid}/github"
-    String payload = '{"auto_deploy": true, "branch": "${params.release_name}","wait_for_ci": true}'
+    String rel ="${params.release_name}"
+    String payload = '{"auto_deploy": true, "branch": "${rel}","wait_for_ci": true}'
     def(String response , int code) = sh(script: """ curl -X PATCH ${updateUrl}  -H \"${herokuContentType}\" -H \"${heroku_auth}\" -H \"${heroku_accept}" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
     echo "HTTP response response : ${response}"
  
