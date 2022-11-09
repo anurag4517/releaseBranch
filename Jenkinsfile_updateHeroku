@@ -30,7 +30,7 @@ pipeline{
                      accept = "Accept: application/vnd.github+json"
                      herokuBaseUrl ="https://api.heroku.com"
                      herokuContentType = "Content-Type: application/json; charset=UTF-8"
-                     heroku_accept = "application/vnd.heroku+json; version=3"
+                     heroku_accept = "Accept: application/vnd.heroku+json; version=3"
                    }
             }                
         }
