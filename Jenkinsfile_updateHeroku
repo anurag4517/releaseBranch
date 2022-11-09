@@ -87,7 +87,7 @@ def updateAutodeployment()
     echo "${rel}"
 
     String my_auth = "Authorization: Bearer ".concat("${heroku_auth}")
-    String payload = "{"branch":"${rel}","auto_deploy": true,"wait_for_ci": true}"
+    String payload = "{\"branch\":\"${rel}\",\"auto_deploy\": true,\"wait_for_ci\": true}"
     echo "${payload}"
     // def(String response , int code) = sh(script: """ curl -X PATCH ${updateUrl}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
     // echo "HTTP response response : ${response}"
