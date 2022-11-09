@@ -87,7 +87,7 @@ def updateAutodeployment()
     echo "HTTP response response : ${response}"
  
 }
-def getAppIF()
+def getAppID()
 {
     String url = "${herokuBaseUrl}/apps/${params.APP_NAME}"
     // response=hitGetApi(url)
