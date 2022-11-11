@@ -7,7 +7,8 @@ pipeline{
     environment {
         
         GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')
-        auth = credentials('githubaccesspat')
+        // auth = credentials('githubaccesspat')
+        
         
     }
     parameters
@@ -27,6 +28,7 @@ pipeline{
                 script{
                      baseUrl = "https://api.github.com"
                      accept = "Accept: application/vnd.github+json"
+                     auth="Authorization: Bearer ".concat("${GITHUB_API_TOKEN}")
                    }
             }                
         }
@@ -37,8 +39,8 @@ pipeline{
            steps {
             script 
             {
+                isMaintiner()
                 createReleaseBranch()
-                checkIfBranchExists()
                 
             }
            } 
