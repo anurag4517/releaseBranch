@@ -6,18 +6,15 @@ pipeline{
     }
     environment {
         
-        GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')
-        // auth = credentials('githubaccesspat')
-        
-        
+        GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')    
     }
     parameters
     {
-        string(description: 'Specify github username for who needs to create release branch', name: 'username', defaultValue: 'htiwari1987') 
-        string(description: 'Specify name of organization in which repo recides', name: 'organization', defaultValue: 'salesforcedocs')
+        string(description: 'Specify github USERNAME for who needs to create release branch', name: 'USERNAME', defaultValue: 'htiwari1987') 
+        string(description: 'Specify name of ORGANIZATION in which repo recides', name: 'ORGANIZATION', defaultValue: 'salesforcedocs')
         string(description: 'Name of repo to create release branch ', name: 'REPO_NAME',defaultValue: 'anurag-test-repo')
-        string(description: 'Specify the release branch name', name: 'release_name',defaultValue: 'rel/230')
-        booleanParam(description: 'Force create branch ', name: 'forcecreate', defaultValue: false)
+        string(description: 'Specify the release branch name', name: 'RELEASE_NAME',defaultValue: 'rel/230')
+        booleanParam(description: 'Force create branch if already exists , this will delete previous existing branch with given name ', name: 'FORCECREATE', defaultValue: false)
     }
         
         
@@ -73,7 +70,7 @@ pipeline{
 }
 def enableBranchProtection()
 {
-   String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}/branches/${params.release_name}/protection"
+   String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}/branches/${params.RELEASE_NAME}/protection"
     String payload = '{"required_status_checks": null,"enforce_admins": true,"required_pull_request_reviews": {"dismissal_restrictions": {},"dismiss_stale_reviews": false,"require_code_owner_reviews": false,"required_approving_review_count": 1,"require_last_push_approval": true,"bypass_pull_request_allowances": {}},"restrictions": {"users": [],"teams": [],"apps": []},"required_linear_history": false,"allow_force_pushes": false,"allow_deletions": false,"block_creations": true,"required_conversation_resolution": true,"lock_branch": false,"allow_fork_syncing": false}'
     response = hitPutApi(url,payload)
     validateStatusCode(response,'200','Branch Protection')
@@ -104,16 +101,24 @@ def cloneRepo()
     boolean status=checkIfBranchExists() 
     if(!status)
     {
-    sh(script: """ rm -rf ${REPO_NAME};git clone --single-branch https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git ${REPO_NAME}; cd ${REPO_NAME} ; git checkout -b ${release_name};echo \"Creating a new release ${release_name}\">> README.md ; git add .;git commit -m \"Creating a new release ${release_name}\";git push --set-upstream origin ${release_name}
+    sh(script: """ rm -rf ${REPO_NAME};git clone --single-branch https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git ${REPO_NAME}; cd ${REPO_NAME} ; git checkout -b ${RELEASE_NAME};echo \"Creating a new release ${RELEASE_NAME}\">> README.md ; git add .;git commit -m \"Creating a new release ${RELEASE_NAME}\";git push --set-upstream origin ${RELEASE_NAME}
 
       """, returnStdout: true).trim()
-    }else { error( 'Branch already exists in repo  ' )}
+    }else { 
+        if(!FORCECREATE){ error( 'Branch already exists in repo  ' ) }
+        else{
+            echo 'Force Creating a branch '
+            sh(script: """ cd ${REPO_NAME} ;  git push origin --delete ${RELEASE_NAME}     """, returnStdout: true).trim()
+            cloneRepo()
+        }
+        
+        }
 }
 
 def checkIfBranchExists()
 {
     try {
-    sh(script: """ rm -rf ${REPO_NAME};git clone https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git --branch ${release_name} ${REPO_NAME} ; """, returnStdout: true).trim()
+    sh(script: """ rm -rf ${REPO_NAME};git clone https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git --branch ${RELEASE_NAME} ${REPO_NAME} ; """, returnStdout: true).trim()
     return true;
     }catch(Exception ex) {
         return false
@@ -160,7 +165,7 @@ def isMaintiner()
 def checkRoleOfUser(String team_slug)
 {
    
-    String url = "${baseUrl}/orgs/salesforcedocs/teams/${team_slug}/memberships/${params.username}"
+    String url = "${baseUrl}/orgs/salesforcedocs/teams/${team_slug}/memberships/${params.USERNAME}"
     userRole = returnRole(url)
     if(userRole!='NA')
     {
