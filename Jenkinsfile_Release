@@ -14,7 +14,7 @@ pipeline{
         string(description: 'Specify name of ORGANIZATION in which repo recides', name: 'ORGANIZATION', defaultValue: 'salesforcedocs')
         string(description: 'Name of repo to create release branch ', name: 'REPO_NAME',defaultValue: 'anurag-test-repo')
         string(description: 'Specify the release branch name', name: 'RELEASE_NAME',defaultValue: 'rel/230')
-        booleanParam(description: 'Force create branch if already exists , this will delete previous existing branch with given name ', name: 'FORCECREATE', defaultValue: false)
+        
     }
         
         
