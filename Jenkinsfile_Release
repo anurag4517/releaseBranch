@@ -6,15 +6,18 @@ pipeline{
     }
     environment {
         
-        GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')    
+        GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')
+        // auth = credentials('githubaccesspat')
+        
+        
     }
     parameters
     {
-        string(description: 'Specify github USERNAME for who needs to create release branch', name: 'USERNAME', defaultValue: 'htiwari1987') 
-        string(description: 'Specify name of ORGANIZATION in which repo recides', name: 'ORGANIZATION', defaultValue: 'salesforcedocs')
+        string(description: 'Specify github username for who needs to create release branch', name: 'username', defaultValue: 'htiwari1987') 
+        string(description: 'Specify name of organization in which repo recides', name: 'organization', defaultValue: 'salesforcedocs')
         string(description: 'Name of repo to create release branch ', name: 'REPO_NAME',defaultValue: 'anurag-test-repo')
-        string(description: 'Specify the release branch name', name: 'RELEASE_NAME',defaultValue: '250')
-        
+        string(description: 'Specify the release branch name', name: 'release_name',defaultValue: 'rel/230')
+        booleanParam(description: 'Force create branch ', name: 'forcecreate', defaultValue: false)
     }
         
         
@@ -31,52 +34,58 @@ pipeline{
         }
        
         
-        stage("Create a Release and Release Notes")
+        stage("Create release branch")
         {
            steps {
             script 
             {
                 isMaintiner()
-                createRelease()
+                createReleaseBranch()
                 
             }
            } 
         }
         
-        
+        stage("Enable only Squash and merge in PR ")
+        {
+           steps {
+            script 
+            {
+                enableSquashandMerge()
+                
+                
+            }
+           } 
+        }
+        stage("Enable Branch Protections for release branch")
+        {
+           steps {
+            script 
+            {
+                enableBranchProtection()    
+            }
+           } 
+        }
+
+
          
         }   
 }
-
-def createRelease()
+def enableBranchProtection()
 {
-    String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}/releases/latest"
-    result=sh(script: "curl ${url}  -H \"${accept}\" -H \"${auth}\" | python -c \"import sys,json; print json.load(sys.stdin)['tag_name']\" ", returnStdout: true).trim().tokenize("\n")
-    echo '-------Previous Tag Released -------------'
-    String previousTagName=result[0]
-    echo "${previousTagName}"
-    def majorVersion = "${params.RELEASE_NAME}".toInteger()
-    def minorVersion = 0
-    previousMajorVersion=previousTagName.split('\\.')[0].toInteger()
-    if (majorVersion!=previousMajorVersion){
-        minorVersion=0
-    }
-    else{
-        try {
-            minorVersion=previousTagName.split('\\.')[1].toInteger() + 1
-        }catch(Exception ex) {
-             minorVersion = 0}
-    }         
-    
-    String tagName = majorVersion.toString() + "." + minorVersion.toString()
-
-    echo 'Tag name is -----> '
-    echo "${tagName}"
-    
-    generateRelease(tagName,"${params.RELEASE_NAME}")
-
+   String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}/branches/${params.release_name}/protection"
+    String payload = '{"required_status_checks": null,"enforce_admins": true,"required_pull_request_reviews": {"dismissal_restrictions": {},"dismiss_stale_reviews": false,"require_code_owner_reviews": false,"required_approving_review_count": 1,"require_last_push_approval": true,"bypass_pull_request_allowances": {}},"restrictions": {"users": [],"teams": [],"apps": []},"required_linear_history": false,"allow_force_pushes": false,"allow_deletions": false,"block_creations": true,"required_conversation_resolution": true,"lock_branch": false,"allow_fork_syncing": false}'
+    response = hitPutApi(url,payload)
+    validateStatusCode(response,'200','Branch Protection')
 }
 
+def enableSquashandMerge()
+{
+   String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}"
+    String payload = '{"allow_squash_merge": true,"allow_merge_commit": false,"allow_rebase_merge": false}'
+    response = hitPatchApi(url,payload)
+    validateStatusCode(response,'200','Squash Merge')
+}
 
 def validateStatusCode(String response , String expectedResponse , String identity)
 {
@@ -84,20 +93,33 @@ def validateStatusCode(String response , String expectedResponse , String identi
                             error("!!! Unable to find with given parameters : ${identity}") 
         }
 } 
-
-
-
-def generateRelease(String tagName , String branch )
+def createReleaseBranch()
 {
-    String url = "${baseUrl}/repos/salesforcedocs/${params.REPO_NAME}/releases"
-    String payload = "{\"tag_name\":\"${tagName}\",\"name\":\"${tagName}\",\"target_commitish\":\"${branch}\",\"generate_release_notes\": true}"
-    response = hitPostApiReturnResponse(url,payload)
+    cloneRepo()
+    checkIfBranchExists()
 }
 
+def cloneRepo()
+{
+    boolean status=checkIfBranchExists() 
+    if(!status)
+    {
+    sh(script: """ rm -rf ${REPO_NAME};git clone --single-branch https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git ${REPO_NAME}; cd ${REPO_NAME} ; git checkout -b ${release_name};echo \"Creating a new release ${release_name}\">> README.md ; git add .;git commit -m \"Creating a new release ${release_name}\";git push --set-upstream origin ${release_name}
 
+      """, returnStdout: true).trim()
+    }else { error( 'Branch already exists in repo  ' )}
+}
 
+def checkIfBranchExists()
+{
+    try {
+    sh(script: """ rm -rf ${REPO_NAME};git clone https://git:${GITHUB_API_TOKEN}@github.com/salesforcedocs/${REPO_NAME}.git --branch ${release_name} ${REPO_NAME} ; """, returnStdout: true).trim()
+    return true;
+    }catch(Exception ex) {
+        return false
 
-
+    }
+}
 def hitGetApi(String urlasked)
 {
       
@@ -107,23 +129,13 @@ def hitGetApi(String urlasked)
       
 
 }
-def hitPostApi(String url , String payload)
+def hitPatchApi(String url , String payload)
 {
-    def(String response , int code) = sh(script: """ curl -X POST ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
+    def(String response , int code) = sh(script: """ curl -X PATCH ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
       echo "HTTP response response : ${response}"
       return response
 
 }
-
-def hitPostApiReturnResponse(String url , String payload)
-{
-    def response  = sh(script: """ curl -X POST ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' | python -c \"import sys,json; print json.load(sys.stdin)"  """, returnStdout: true).trim().tokenize("\n")
-      echo "HTTP response response : ${response}"
-      return response
-
-}
-
-
 
 def hitPutApi(String url , String payload)
 {
@@ -148,7 +160,7 @@ def isMaintiner()
 def checkRoleOfUser(String team_slug)
 {
    
-    String url = "${baseUrl}/orgs/salesforcedocs/teams/${team_slug}/memberships/${params.USERNAME}"
+    String url = "${baseUrl}/orgs/salesforcedocs/teams/${team_slug}/memberships/${params.username}"
     userRole = returnRole(url)
     if(userRole!='NA')
     {
@@ -189,3 +201,6 @@ def returnRole(String urlasked)
    
 
 }
+
+
+

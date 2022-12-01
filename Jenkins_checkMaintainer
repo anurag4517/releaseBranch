@@ -15,9 +15,8 @@ pipeline{
     {
         string(description: 'Specify github username for who needs to change settings', name: 'username', defaultValue: 'htiwari1987') 
         string(description: 'Specify name of organization in which repo recides', name: 'organization', defaultValue: 'salesforcedocs')
-        string(description: 'Name of repo to create release branch ', name: 'REPO_NAME',defaultValue: 'anurag-test-repo')
-        string(description: 'Specify the release branch name to be updated', name: 'release_name',defaultValue: 'rel/230')
-        booleanParam(description: 'Force create branch ', name: 'forcecreate', defaultValue: false)
+        string(description: 'Name of repo to check access ', name: 'REPO_NAME',defaultValue: 'anurag-test-repo')
+        
     }
         
         

@@ -4,44 +4,15 @@ pipeline{
     agent {
         label 'main'
     }
-    environment {
-        
-        GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')
-        heroku_auth = credentials('HEROKU_API_TOKEN')
-        auth = credentials('githubaccesspat')
-        
-    }
+    
     parameters
     {
-        string(description: 'Specify github username for who needs to change settings', name: 'username', defaultValue: 'htiwari1987') 
-        string(description: 'Specify name of organization in which repo recides', name: 'organization', defaultValue: 'salesforcedocs')
-        string(description: 'Name of repo to create release branch ', name: 'REPO_NAME',defaultValue: 'anurag-test-repo')
-        string(description: 'Specify the release branch name to be updated', name: 'release_name',defaultValue: 'rel/230')
-        booleanParam(description: 'Force create branch ', name: 'forcecreate', defaultValue: false)
+        string(description: 'Name of App to update deployment ', name: 'app_name',defaultValue: 'anurag-test-repo')
+        string(description: 'Release to be updated', name: 'release_name',debooleanParam(description: 'Force create branch ', name: 'forcecreate', defaultValue: false)
     }
         
         
     stages{
-        stage('Initialize the variables') {
-            // Each stage is made up of steps
-            steps{
-                script{
-                     baseUrl = "https://api.github.com"
-                     accept = "Accept: application/vnd.github+json"
-                     herokuBaseUrl ="https://api.heroku.com"
-                     herokuContentType = "Content-Type: application/json; charset=UTF-8"
-                     heroku_accept = "Accept: application/vnd.heroku+json; version=3"
-                   }
-            }                
-        }
-
-        stage("Check if user is maintainer of repo ")
-        {
-            steps {
-                isMaintiner()
-            }
-        }
-       
         
         stage("Update Heroku app auto deployment ")
         {
@@ -62,131 +33,25 @@ pipeline{
 }
 def updateAutodeployment()
 {
-    appid = getAppID()
-    echo "${appid}"
-    id = appid[1]
-    sh(script: "heroku run:detached node dist/updateId.js -n \"${id}\" -b main -gtoken \"${GITHUB_API_TOKEN}\" -htoken \"${heroku_auth}\" -a heroku-app-binding-sfdocs ", returnStdout: true)
+    
+   build job: 'myjob', parameters: [string(name: 'APP_NAME', value: "${app_name}"), string(name: 'BRANCH', value: "${release_name}")]
    
-    // String updateUrl = "https://kolkrabbi.heroku.com/apps/${id}/github"
-    // String rel ="${params.release_name}"
-    // echo "${rel}"
-
-    // String my_auth = "Authorization: Bearer ".concat("${heroku_auth}")
-    // String payload = "{\"branch\":\"${rel}\",\"auto_deploy\": true,\"wait_for_ci\": true}"
-    // echo "${payload}"
-    // httpRequest acceptType: 'application/vnd.heroku+json;version=3', contentType: 'APPLICATION_JSON', customHeaders: [[maskValue: false, name: 'Authorization', value: "${my_auth}"]], httpMode: 'PATCH', requestBody: '\'{"branch":"rel/230","auto_deploy": true,"wait_for_ci": true}\'', responseHandle: 'NONE', url: 'https://kolkrabbi.heroku.com/apps/4be90858-f781-45ef-a50f-98a342c997c7/github', wrapAsMultipart: false
-    // def(String response , int code) = sh(script: """ export https_proxy='http://public0-proxy1-0-xrd.data.sfdc.net:8080/'; export http_proxy='http://public0-proxy1-0-xrd.data.sfdc.net:8080/';curl -X PATCH ${updateUrl}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
-    // echo "HTTP response response : ${response}"
-    // validateStatusCode(response,'200','Auto Deployment Failed')
  
 }
-def getAppID()
-{
-    String url = "${herokuBaseUrl}/apps/${params.REPO_NAME}"
-    // response=hitGetApi(url)
-    //  validateStatusCode(response,'200','Heroku App')
-    String my_auth = "Authorization: Bearer ".concat("${heroku_auth}")
-    def(String response , int code) = sh(script: "curl ${url}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}\" -o /dev/null -w \"%{http_code}\"", returnStdout: true).trim().tokenize("\n")
-      echo "HTTP response response : ${response}"
-    def appid = sh(script: "echo $https_proxy;curl ${url}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}\"| python -c \"import sys,json; print json.load(sys.stdin)['id']\" ", returnStdout: true).trim().tokenize("\n")
-    echo "${appid}"
-    return appid
-
-}
-
-
-def validateStatusCode(String response , String expectedResponse , String identity)
-{
-       if(response!=expectedResponse){
-                            error("!!! Unable to find with given parameters : ${identity}") 
-        }
-} 
 
 
 
 
 
-def hitGetApi(String urlasked)
-{
-      
-      def(String response , int code) = sh(script: "curl ${urlasked}  -H \"${accept}\" -H \"${auth}\" -o /dev/null -w \"%{http_code}\"", returnStdout: true).trim().tokenize("\n")
-      echo "HTTP response response : ${response}"
-      return response
-      
-
-}
-def hitPatchApi(String url , String payload)
-{
-    def(String response , int code) = sh(script: """ curl -X PATCH ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
-      echo "HTTP response response : ${response}"
-      return response
-
-}
-
-def hitPutApi(String url , String payload)
-{
-    def(String response , int code) = sh(script: """ curl -X PUT ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
-      echo "HTTP response response : ${response}"
-      return response
-
-}
 
 
-def isMaintiner()
-{
-    String team_slug= "ccx-" + params.REPO_NAME
-    flag=checkRoleOfUser(team_slug)
-    if(flag ==0) 
-    {
-        error( " User is not a maintainer of repo so cannot create a Branch . Kindly connect with #SFDocs and get added to ${team_slug} ")
-    }
-}
 
 
-def checkRoleOfUser(String team_slug)
-{
-   
-    String url = "${baseUrl}/orgs/salesforcedocs/teams/${team_slug}/memberships/${params.username}"
-    userRole = returnRole(url)
-    if(userRole!='NA')
-    {
-    int flag =0 ;
-    for(String myrole : userRole)
-    {
-        echo myrole
-        if(myrole == 'maintainer') {
-            echo 'Success------> Maintainer  '
-            
-            flag=1 ; return flag;
-        }else { 
-            echo myrole 
-            echo params.userrole
-            echo '---Looping----- '
-            
-        }
-    }
-    return flag 
 
-    }
-    else { return 0 }
-    
-}
 
-def returnRole(String urlasked)
-{
-    
-    check = hitGetApi(urlasked)
-    if(check!="404"){
-        echo 'Previous role is assigned returning role '
-    def role = sh(script: "curl ${urlasked}  -H \"${accept}\" -H \"${auth}\" | python -c \"import sys,json; print json.load(sys.stdin)['role']\" ", returnStdout: true).trim().tokenize("\n")
-    return role
-    }else { 
-        echo 'No previous role was assigned here---> Need to assign a role  '
-    return 'NA'
-    }
-   
 
-}
+
+
 
 
 
