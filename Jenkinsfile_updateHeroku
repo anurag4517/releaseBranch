@@ -1,0 +1,58 @@
+
+
+pipeline{
+    agent {
+        label 'main'
+    }
+    
+    parameters
+    {
+        string(description: 'Name of App to update deployment ', name: 'app_name',defaultValue: 'anurag-test-repo')
+        string(description: 'Release to be updated', name: 'release_name',debooleanParam(description: 'Force create branch ', name: 'forcecreate', defaultValue: false)
+    }
+        
+        
+    stages{
+        
+        stage("Update Heroku app auto deployment ")
+        {
+           steps {
+            script 
+            {
+                updateAutodeployment()    
+            }
+           } 
+        }
+        
+        
+        
+
+
+         
+        }   
+}
+def updateAutodeployment()
+{
+    
+   build job: 'myjob', parameters: [string(name: 'APP_NAME', value: "${app_name}"), string(name: 'BRANCH', value: "${release_name}")]
+   
+ 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

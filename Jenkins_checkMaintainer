@@ -1,0 +1,141 @@
+
+
+pipeline{
+    agent {
+        label 'main'
+    }
+    environment {
+        
+        GITHUB_API_TOKEN = credentials('GITHUB_API_TOKEN')
+        heroku_auth = credentials('HEROKU_API_TOKEN')
+        auth = credentials('githubaccesspat')
+        
+    }
+    parameters
+    {
+        string(description: 'Specify github username for who needs to change settings', name: 'username', defaultValue: 'htiwari1987') 
+        string(description: 'Specify name of organization in which repo recides', name: 'organization', defaultValue: 'salesforcedocs')
+        string(description: 'Name of repo to check access ', name: 'REPO_NAME',defaultValue: 'anurag-test-repo')
+        
+    }
+        
+        
+    stages{
+        stage('Initialize the variables') {
+            // Each stage is made up of steps
+            steps{
+                script{
+                     baseUrl = "https://api.github.com"
+                     accept = "Accept: application/vnd.github+json"
+                     herokuBaseUrl ="https://api.heroku.com"
+                     herokuContentType = "Content-Type: application/json; charset=UTF-8"
+                     heroku_accept = "Accept: application/vnd.heroku+json; version=3"
+                   }
+            }                
+        }
+
+        stage("Check if user is maintainer of repo ")
+        {
+            steps {
+                isMaintiner()
+            }
+        }
+       
+    }   
+}
+
+
+
+def validateStatusCode(String response , String expectedResponse , String identity)
+{
+       if(response!=expectedResponse){
+                            error("!!! Unable to find with given parameters : ${identity}") 
+        }
+} 
+
+
+def hitGetApi(String urlasked)
+{
+      
+      def(String response , int code) = sh(script: "curl ${urlasked}  -H \"${accept}\" -H \"${auth}\" -o /dev/null -w \"%{http_code}\"", returnStdout: true).trim().tokenize("\n")
+      echo "HTTP response response : ${response}"
+      return response
+      
+
+}
+def hitPatchApi(String url , String payload)
+{
+    def(String response , int code) = sh(script: """ curl -X PATCH ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
+      echo "HTTP response response : ${response}"
+      return response
+
+}
+
+def hitPutApi(String url , String payload)
+{
+    def(String response , int code) = sh(script: """ curl -X PUT ${url}  -H \"${accept}\" -H \"${auth}\" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
+      echo "HTTP response response : ${response}"
+      return response
+
+}
+
+
+def isMaintiner()
+{
+    String team_slug= "ccx-" + params.REPO_NAME
+    flag=checkRoleOfUser(team_slug)
+    if(flag ==0) 
+    {
+        error( " User is not a maintainer of repo so cannot create a Branch . Kindly connect with #SFDocs and get added to ${team_slug} ")
+    }
+}
+
+
+def checkRoleOfUser(String team_slug)
+{
+   
+    String url = "${baseUrl}/orgs/salesforcedocs/teams/${team_slug}/memberships/${params.username}"
+    userRole = returnRole(url)
+    if(userRole!='NA')
+    {
+    int flag =0 ;
+    for(String myrole : userRole)
+    {
+        echo myrole
+        if(myrole == 'maintainer') {
+            echo 'Success------> Maintainer  '
+            
+            flag=1 ; return flag;
+        }else { 
+            echo myrole 
+            echo params.userrole
+            echo '---Looping----- '
+            
+        }
+    }
+    return flag 
+
+    }
+    else { return 0 }
+    
+}
+
+def returnRole(String urlasked)
+{
+    
+    check = hitGetApi(urlasked)
+    if(check!="404"){
+        echo 'Previous role is assigned returning role '
+    def role = sh(script: "curl ${urlasked}  -H \"${accept}\" -H \"${auth}\" | python -c \"import sys,json; print json.load(sys.stdin)['role']\" ", returnStdout: true).trim().tokenize("\n")
+    return role
+    }else { 
+        echo 'No previous role was assigned here---> Need to assign a role  '
+    return 'NA'
+    }
+   
+
+}
+
+
+
+
