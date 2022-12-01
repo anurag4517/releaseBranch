@@ -42,57 +42,9 @@ pipeline{
             }
         }
        
-        
-        stage("Update Heroku app auto deployment ")
-        {
-           steps {
-            script 
-            {
-                updateAutodeployment()    
-            }
-           } 
-        }
-        
-        
-        
-
-
-         
-        }   
+    }   
 }
-def updateAutodeployment()
-{
-    appid = getAppID()
-    echo "${appid}"
-    id = appid[1]
-    sh(script: "heroku run:detached node dist/updateId.js -n \"${id}\" -b main -gtoken \"${GITHUB_API_TOKEN}\" -htoken \"${heroku_auth}\" -a heroku-app-binding-sfdocs ", returnStdout: true)
-   
-    // String updateUrl = "https://kolkrabbi.heroku.com/apps/${id}/github"
-    // String rel ="${params.release_name}"
-    // echo "${rel}"
 
-    // String my_auth = "Authorization: Bearer ".concat("${heroku_auth}")
-    // String payload = "{\"branch\":\"${rel}\",\"auto_deploy\": true,\"wait_for_ci\": true}"
-    // echo "${payload}"
-    // httpRequest acceptType: 'application/vnd.heroku+json;version=3', contentType: 'APPLICATION_JSON', customHeaders: [[maskValue: false, name: 'Authorization', value: "${my_auth}"]], httpMode: 'PATCH', requestBody: '\'{"branch":"rel/230","auto_deploy": true,"wait_for_ci": true}\'', responseHandle: 'NONE', url: 'https://kolkrabbi.heroku.com/apps/4be90858-f781-45ef-a50f-98a342c997c7/github', wrapAsMultipart: false
-    // def(String response , int code) = sh(script: """ export https_proxy='http://public0-proxy1-0-xrd.data.sfdc.net:8080/'; export http_proxy='http://public0-proxy1-0-xrd.data.sfdc.net:8080/';curl -X PATCH ${updateUrl}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}" -d \'${payload}\' -o /dev/null -w \"%{http_code}\"  """, returnStdout: true).trim().tokenize("\n")
-    // echo "HTTP response response : ${response}"
-    // validateStatusCode(response,'200','Auto Deployment Failed')
- 
-}
-def getAppID()
-{
-    String url = "${herokuBaseUrl}/apps/${params.REPO_NAME}"
-    // response=hitGetApi(url)
-    //  validateStatusCode(response,'200','Heroku App')
-    String my_auth = "Authorization: Bearer ".concat("${heroku_auth}")
-    def(String response , int code) = sh(script: "curl ${url}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}\" -o /dev/null -w \"%{http_code}\"", returnStdout: true).trim().tokenize("\n")
-      echo "HTTP response response : ${response}"
-    def appid = sh(script: "echo $https_proxy;curl ${url}  -H \"${herokuContentType}\" -H \"${my_auth}\" -H \"${heroku_accept}\"| python -c \"import sys,json; print json.load(sys.stdin)['id']\" ", returnStdout: true).trim().tokenize("\n")
-    echo "${appid}"
-    return appid
-
-}
 
 
 def validateStatusCode(String response , String expectedResponse , String identity)
@@ -101,9 +53,6 @@ def validateStatusCode(String response , String expectedResponse , String identi
                             error("!!! Unable to find with given parameters : ${identity}") 
         }
 } 
-
-
-
 
 
 def hitGetApi(String urlasked)
